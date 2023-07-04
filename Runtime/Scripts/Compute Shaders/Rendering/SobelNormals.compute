@@ -1,0 +1,100 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#pragma multi_compile __ PRECALCULATION_PASS
+
+Texture3D<float> Opacities;
+float4 Dimensions;
+
+RWTexture3D<float4> Result;
+
+static const float SOBEL_MATRIX[][3] = { { 1, 2, 1 }, { 2, 4, 2 }, { 1, 2, 1 } };
+
+static int3 dimensions;
+static int3 ida;
+
+
+float opacityAt(int x, int y, int z)
+{
+    return Opacities[int3(x, y, z)];
+}
+
+void setResult(float4 result)
+{
+    Result[ida] = result;
+}
+
+[numthreads(4,4,4)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    ida = int3(id.x, id.y, id.z); 
+    dimensions = int3(Dimensions.x, Dimensions.y, Dimensions.z);
+
+    if (ida.x >= dimensions.x || ida.y >= dimensions.y || ida.z >= dimensions.z)
+    {
+        return;
+    }
+    
+    float opacities[3][3][3];
+    
+    // Reading Opacities volume
+    {
+        int x = ida.x;
+        int y = ida.y;
+        int z = ida.z;
+        [unroll]
+        for (int i = 0; i <= 2; i++)
+        {
+            [unroll]
+            for (int j = 0; j <= 2; j++)
+            {
+                [unroll]
+                for (int k = 0; k <= 2; k++)
+                {
+                    opacities[i][j][k] = opacityAt(x + i, y + j, z + k);
+                }
+            }
+        }
+    }
+	
+    float3 higher = float3(0, 0, 0);
+    float3 lower = float3(0, 0, 0);
+        
+    // Calculating Sobel value
+    {    
+        [unroll]
+        for (int i = 0; i <= 2; i++)
+        {
+            [unroll]
+            for (int j = 0; j <= 2; j++)
+            {
+                float factor = SOBEL_MATRIX[i][j];
+
+                // x
+                higher.x += opacities[2][i][j] * factor;
+                lower.x += opacities[0][i][j] * factor;
+
+                // y
+                higher.y += opacities[i][2][j] * factor;
+                lower.y += opacities[i][0][j] * factor;
+
+                // z
+                higher.z += opacities[i][j][2] * factor;
+                lower.z += opacities[i][j][0] * factor;
+            }
+        }
+    }
+    
+    float3 gradient = higher - lower;
+
+    if (gradient.x != 0. || gradient.y != 0. || gradient.z != 0.)
+    {
+        float3 normal = -normalize(gradient); //-gradient.normalized;
+        float3 packedNormal = (normal + float3(1., 1., 1.)) / 2.;
+        setResult(float4(packedNormal.xyz, 1));
+    }
+    else
+    {
+        setResult(float4(0.5, 0.5, 0.5, 1));
+    }
+}

@@ -1,0 +1,173 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#pragma multi_compile _ DITHERING
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+
+// Textures
+sampler3D Volume;
+Texture2D<float4> BoundariesFront;
+Texture2D<float4> BoundariesBack;
+Texture2D<float> Occluders;
+//Texture2D<float4> CarvingNormals;
+float4x4 MatrixMV;
+float4x4 MatrixPinv;
+float CameraFarClip;
+float StepSize;
+float IntensityThreshold;
+
+int Xstart;
+int Ystart;
+
+RWTexture2D<float4> PositionDepth;
+RWTexture2D<float4> DirectionSteps;
+//RWTexture2D<float> CarvingUsed;
+
+// Static variables
+static float3 rayStartNc;
+static float3 rayDirection;
+static int totalSteps;
+static float totalStepsF;
+static float startDepth;
+static float endDepth;
+//static bool carvingUsed;
+//static float zDepth;
+
+//static const float INTENSITY_THRESHOLD = 0.1;
+
+// Takes a 3D object coordinate and returns the intensity at that point in the volume
+float GetIntensity(float3 position_nc)
+{
+    return tex3Dlod(Volume, float4(position_nc, 0)).r;
+}
+
+float PerspectiveCorrectCoordinate(float depth)
+{
+    float4 startDepthV = mul(MatrixPinv, float4(0, 0, 1. - startDepth, 1));
+    float4 endDepthV = mul(MatrixPinv, float4(0, 0, 1. - endDepth, 1));
+    float4 depthV = mul(MatrixPinv, float4(0, 0, 1. - depth, 1));
+
+    startDepthV /= startDepthV.w;
+    endDepthV /= endDepthV.w;
+    depthV /= depthV.w;
+
+    float factor = (depthV.z - startDepthV.z) / (endDepthV.z - startDepthV.z);
+
+    return clamp(factor, 0.f, 1.f);
+}
+
+void Setup(int2 ida)
+{
+	// Getting values from front and back textures
+	float4 frontTextureValue = BoundariesFront[ida.xy];
+	float4 backTextureValue = BoundariesBack[ida.xy];
+    
+    startDepth = 1.f - frontTextureValue.w;
+    endDepth = 1.f - backTextureValue.w;
+
+	// Setting normal coordinate vectors
+	rayStartNc = frontTextureValue.xyz;
+	float3 rayEndNc = backTextureValue.xyz;
+    
+    //float carvingDepth = 1.f - CarvingNormals[ida.xy].a;
+    
+  //  if (carvingDepth < 1. && carvingDepth > startDepth)
+  //  {
+  //      float totalStepsRatio = PerspectiveCorrectCoordinate(carvingDepth);
+  //      //totalSteps = totalStepsF * totalStepsRatio;
+		////total_steps += 1;
+        
+  //      rayStartNc = lerp(rayStartNc, rayEndNc, totalStepsRatio);
+  //      startDepth = carvingDepth;
+
+  //      carvingUsed = true;
+  //  }
+    
+	float3 startToEndNC = rayEndNc - rayStartNc;	
+
+	// Setting variables used for integration
+	//float3 start_to_end = start_to_end_nc * volume_dimensions;
+	float distanceStartToEnd = length(startToEndNC);
+	rayDirection = normalize(startToEndNC);
+	//ray_start = ray_start_nc * volume_dimensions;
+    totalStepsF = distanceStartToEnd / StepSize;
+	totalSteps = int(totalStepsF);
+
+	
+
+    float occluderDepth = 1.f - Occluders[ida.xy];
+
+    if (occluderDepth < endDepth)
+    {
+        float totalStepsRatio = PerspectiveCorrectCoordinate(occluderDepth);
+        totalSteps = totalStepsF * totalStepsRatio;
+		//total_steps += 1;
+    }
+    
+    
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int2 ida = id.xy + int2(Xstart, Ystart);
+
+    uint textureWidth;
+    uint textureHeight;
+    BoundariesFront.GetDimensions(textureWidth, textureHeight);
+
+    if (ida.x >= (int)textureWidth || ida.y >= (int)textureHeight)
+    {
+        return;
+    }
+
+	Setup(ida);    
+
+	if (totalSteps <= 0)
+	{
+		DirectionSteps[ida] = float4(0, 0, 0, 0);
+		PositionDepth[ida] = float4(0, 0, 0, 1);
+        //CarvingUsed[ida] = 0.;
+        return;
+    }
+
+	// Position
+	float3 currentPositionNc = rayStartNc;
+    float3 stepNc = rayDirection * StepSize;
+    
+#if DITHERING
+    float random = frac(sin(ida.x * 12.9898 + ida.y * 78.233) * 43758.5453);    
+    currentPositionNc += stepNc * random;
+#endif
+
+	// Current color
+	float currentIntensity;	
+    
+    int i = 0;
+	
+	while (i < totalSteps)
+	{
+		currentIntensity = GetIntensity(currentPositionNc);
+
+        if (currentIntensity >= IntensityThreshold)
+		{
+            float4 currentPosV = mul(MatrixMV, float4(currentPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+            float z = currentPosV.z / currentPosV.w;
+
+            int remainingSteps = totalSteps - i;
+			
+            PositionDepth[ida] = float4(currentPositionNc, z);
+            DirectionSteps[ida] = float4(stepNc, remainingSteps);
+            return;
+        }
+
+		currentPositionNc += stepNc;
+		i++;
+	}
+
+    PositionDepth[ida] = float4(0,0,0, 1);
+    DirectionSteps[ida] = float4(0, 0, 0, 0);
+}

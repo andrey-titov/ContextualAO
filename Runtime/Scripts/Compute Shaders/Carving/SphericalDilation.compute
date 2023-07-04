@@ -1,0 +1,49 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#pragma multi_compile __ FRONT_FACES
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+Texture2D<float> DepthBuffer;
+RWTexture2D<float> Result;
+
+float DilationZ; 
+int DilationXY;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float maxDepth = 0;
+    
+    for (int x = -DilationXY; x <= DilationXY; x++)
+    {
+        for (int y = -DilationXY; y <= DilationXY; y++)
+        {
+            float distanceFromCenter = length(float2(x, y));
+            float distanceFromCenterNormalized = distanceFromCenter / DilationXY;
+            
+#if FRONT_FACES
+            float originalDepth = DepthBuffer[id.xy + int2(x, y)];
+#else
+            float originalDepth = 1.0 - DepthBuffer[id.xy + int2(x, y)];
+            originalDepth %= 1.0;
+#endif
+            
+            float dilation = DilationZ * sqrt(abs(1 - distanceFromCenterNormalized * distanceFromCenterNormalized));            
+            float dilatedDepth = originalDepth + dilation;
+            
+            if (distanceFromCenterNormalized <= 1.0 && dilatedDepth > maxDepth)
+            {                
+                maxDepth = dilatedDepth;
+            }        
+        }
+    }
+    
+#if FRONT_FACES
+    Result[id.xy] =  maxDepth;
+#else
+    float minDepth = 1.0 - maxDepth;
+    Result[id.xy] = minDepth;
+#endif
+}

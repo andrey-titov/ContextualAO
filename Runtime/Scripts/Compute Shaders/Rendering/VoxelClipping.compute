@@ -1,0 +1,271 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#pragma multi_compile CARVING_0 CARVING_1 CARVING_2 CARVING_3 CARVING_4 CARVING_5 CARVING_6 CARVING_7 CARVING_8
+
+#pragma multi_compile __ PRECALCULATION_PASS
+#pragma multi_compile __ FULL_RECALCULATION
+
+#define NO_AA_SAMPLES 9
+#define SAMPLES_COUNT 41
+
+#define NORM_COMPONENT 1.025
+//#define HALF_COMPONENT 0.25
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+Texture3D Intensities;
+SamplerState samplerIntensities;
+RWTexture3D<float> ResultOpacities;
+
+#if !FULL_RECALCULATION
+RWTexture3D<float> ResultMask;
+#endif
+
+float4 Dimensions;
+static const float4x4 M = float4x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+float4x4 CarvingMatrixMVP[] = { M, M, M, M, M, M, M, M };
+#if !PRECALCULATION_PASS
+
+#if CARVING_1 || CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepthDilation0;
+#endif
+#if CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepthDilation1;
+#endif
+#if CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepthDilation2;
+#endif
+#if CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepthDilation3;
+#endif
+#if CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepthDilation4;
+#endif
+#if CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepthDilation5;
+#endif
+#if CARVING_7 || CARVING_8
+sampler2D CarvingDepthDilation6;
+#endif
+#if CARVING_8
+sampler2D CarvingDepthDilation7;
+#endif
+
+#endif
+
+sampler2D OpacityTF;
+
+static int3 dimensions;
+
+static const float3 RandomNormalizedPoints[SAMPLES_COUNT] =
+{
+    float3(0, 0, 0),
+    
+    float3(NORM_COMPONENT, NORM_COMPONENT, NORM_COMPONENT),
+    float3(NORM_COMPONENT, NORM_COMPONENT, -NORM_COMPONENT),
+    float3(NORM_COMPONENT, -NORM_COMPONENT, NORM_COMPONENT),
+    float3(NORM_COMPONENT, -NORM_COMPONENT, -NORM_COMPONENT),
+    float3(-NORM_COMPONENT, NORM_COMPONENT, NORM_COMPONENT),
+    float3(-NORM_COMPONENT, NORM_COMPONENT, -NORM_COMPONENT),
+    float3(-NORM_COMPONENT, -NORM_COMPONENT, NORM_COMPONENT),
+    float3(-NORM_COMPONENT, -NORM_COMPONENT, -NORM_COMPONENT),
+    
+    float3(-0.5026628, -0.7785121, -0.06597865),
+    float3(0.5432082, 0.3150378, -0.1344348),
+    float3(-0.2918324, 0.8877245, -0.7974671),
+    float3(0.2849112, -0.9427264, -0.5039417),
+    float3(-0.3597797, 0.9795343, 0.3642462),
+    float3(0.3097758, -0.4345415, 0.2306929),
+    float3(0.4085031, 0.4035933, 0.8995569),
+    float3(-0.813223, -0.6781856, -0.2360578),
+    float3(0.5958954, -0.6610657, 0.5875672),
+    float3(-0.3855435, 0.6460569, 0.7729391),
+    float3(0.1126046, 0.433468, 0.3985916),
+    float3(-0.9727712, 0.9837523, 0.6126032),
+    float3(0.7174872, -0.8749933, 0.02878749),
+    float3(0.05051649, -0.4543497, 0.9875927),
+    float3(0.3822088, -0.226769, -0.1313322),
+    float3(0.350811, 0.3547634, -0.05425066),
+    float3(-0.5109625, -0.2930318, 0.05250525),
+    float3(-0.6611454, -0.3068244, 0.3833899),
+    float3(-0.2097138, -0.6894398, 0.8996736),
+    float3(-0.8299208, 0.9473128, -0.02389652),
+    float3(0.277998, -0.906289, -0.7583323),
+    float3(-0.5704062, -0.8276935, -0.3761944),
+    float3(0.09746659, -0.3870085, 0.9957821),
+    float3(0.7516431, 0.5922886, -0.5595482),
+    float3(-0.7980947, -0.6420134, -0.1420569),
+    float3(0.9119642, -0.1954319, 0.5485834),
+    float3(0.8952743, -0.7549157, -0.01582903),
+    float3(-0.3581821, -0.874581, -0.06091136),
+    float3(-0.2795662, -0.2262499, -0.2597076),
+    float3(-0.9847983, 0.2369426, 0.673192),
+    float3(0.7129296, 0.547408, -0.8223062),
+    float3(-0.947316, 0.7725185, -0.5480607),
+};
+
+float getOpacityTF(float intensity)
+{
+    return tex2Dlod(OpacityTF, float4(intensity, 0, 0, 0)).r;
+}
+
+float3 getCoordinateAndDepth(float3 voxelPositionNc, int carvingId)
+{
+    float4 currentPosP = mul(CarvingMatrixMVP[carvingId], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;
+    
+    float2 pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;
+    
+    return float3(pixelCoordinateOfVoxel.xy, currentPosP.z);
+}
+
+#if !PRECALCULATION_PASS
+bool2 isOutsideDepthWithinDilation(float3 voxelPositionNc)
+{
+    float3 coordinateDepth;
+    float4 carvingValues;
+    bool sampleOutsideDepthBuffers = true;
+    bool sampleWithinDilationBuffers = false;
+    
+#if CARVING_1 || CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 0);
+    carvingValues = tex2Dlod(CarvingDepthDilation0, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+#if CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 1);
+    carvingValues = tex2Dlod(CarvingDepthDilation1, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+#if CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 2);
+    carvingValues = tex2Dlod(CarvingDepthDilation2, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+#if CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 3);
+    carvingValues = tex2Dlod(CarvingDepthDilation3, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+#if CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 4);
+    carvingValues = tex2Dlod(CarvingDepthDilation4, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+#if CARVING_6 || CARVING_7 || CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 5);
+    carvingValues = tex2Dlod(CarvingDepthDilation5, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+#if CARVING_7 || CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 6);
+    carvingValues = tex2Dlod(CarvingDepthDilation6, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+#if CARVING_8
+    coordinateDepth = getCoordinateAndDepth(voxelPositionNc, 7);
+    carvingValues = tex2Dlod(CarvingDepthDilation7, float4(coordinateDepth.xy, 0, 0));
+    sampleOutsideDepthBuffers = sampleOutsideDepthBuffers && (coordinateDepth.z > carvingValues.r || coordinateDepth.z < carvingValues.g);
+    sampleWithinDilationBuffers = sampleWithinDilationBuffers || (coordinateDepth.z < carvingValues.b && coordinateDepth.z > carvingValues.a);
+#endif
+    
+    return bool2(sampleOutsideDepthBuffers, sampleWithinDilationBuffers);
+}
+#endif
+
+[numthreads(4, 4, 4)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    int3 ida = int3(id.x, id.y, id.z);
+    dimensions = int3(Dimensions.x, Dimensions.y, Dimensions.z);
+
+    if (ida.x >= dimensions.x || ida.y >= dimensions.y || ida.z >= dimensions.z)
+    {
+        return;
+    }
+    
+    float intensity = Intensities[ida].r;
+    float opacity = getOpacityTF(intensity);
+    
+#if !PRECALCULATION_PASS
+    float accumulatedOpacity = 0;
+    int opacityCount = 0;
+    int dilationValue = 0;
+    
+    for (int i = 0; i < NO_AA_SAMPLES; i++)
+    {
+        float3 sampleOffset = RandomNormalizedPoints[i].xyz;
+        float3 voxelPositionNc = float3(ida + float3(0.5, 0.5, 0.5) + sampleOffset) / float3(dimensions);
+        
+        bool2 outsideDepthWithinDilation =
+        isOutsideDepthWithinDilation(voxelPositionNc);
+        
+        accumulatedOpacity += outsideDepthWithinDilation.x ? opacity : 0;
+        opacityCount += outsideDepthWithinDilation.x ? 1 : 0;
+        dilationValue += outsideDepthWithinDilation.y ? 1 : 0;
+    }
+    
+    float accumulatedOpacityF;
+    float dilationValueF;
+    
+    if (opacityCount > 0 && opacityCount < NO_AA_SAMPLES)
+    {
+        for (int i = NO_AA_SAMPLES; i < SAMPLES_COUNT; i++)
+        {
+            float3 sampleOffset = RandomNormalizedPoints[i].xyz;
+            float3 voxelPositionNc = float3(ida + float3(0.5, 0.5, 0.5) + sampleOffset) / float3(dimensions);
+            
+            bool2 outsideDepthWithinDilation =
+        isOutsideDepthWithinDilation(voxelPositionNc);
+        
+            accumulatedOpacity += outsideDepthWithinDilation.x ? opacity : 0;
+            opacityCount += outsideDepthWithinDilation.x ? 1 : 0;
+            dilationValue += outsideDepthWithinDilation.y ? 1 : 0;
+        }
+        
+        accumulatedOpacityF = clamp(accumulatedOpacity / float(SAMPLES_COUNT), 0, 1);
+    
+        // Mask calculations
+        dilationValueF = dilationValue / float(SAMPLES_COUNT);
+    }
+    else
+    {
+        accumulatedOpacityF = clamp(accumulatedOpacity / float(NO_AA_SAMPLES), 0, 1);
+        dilationValueF = dilationValue / float(NO_AA_SAMPLES);
+    }
+    
+    ResultOpacities[ida + int3(1, 1, 1)] = accumulatedOpacityF;
+    
+#if !FULL_RECALCULATION
+    // Mask calculations
+    if (dilationValueF == 0)
+    {
+        ResultMask[ida] = 1; // Voxel value can be taken from precalculated LAO volume
+    }
+    else if (opacityCount > 0)
+    {
+        ResultMask[ida] = 0.5; // Voxel value needs to be recalculated
+    }
+    else
+    {
+        ResultMask[ida] = 0; // Voxel is fully clipped
+    }
+#endif
+    
+#else
+    ResultOpacities[ida + int3(1, 1, 1)] = opacity;
+#if !FULL_RECALCULATION
+    ResultMask[ida] = 0.5;
+#endif
+    
+#endif
+}

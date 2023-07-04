@@ -1,0 +1,324 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#pragma multi_compile CARVING_0 CARVING_1 CARVING_2 CARVING_3 CARVING_4 CARVING_5 CARVING_6 CARVING_7 CARVING_8
+
+#pragma multi_compile SOLID_COLOR PHONG LAO PHONG_LAO
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+sampler3D Intensities;
+#if PHONG || PHONG_LAO
+sampler3D Normals;
+#endif
+sampler3D Lao;
+Texture2D<half4> PositionDepth;
+Texture2D<float4> DirectionSteps;
+//Texture2D<float> CarvingUsed;
+//Texture2D<float4> CarvingNormals;
+float4x4 MatrixM;
+float4x4 MatrixMV; 
+static const float4x4 M = float4x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+float4x4 CarvingMatrixMVP[] = { M, M, M, M, M, M, M, M };
+RWTexture2D<float4> VolumeImage;
+sampler2D ColorOpacityTF;
+float IntensityThreshold;
+float4 ViewerPositionW;
+float4 LightPositionW;
+float4 FogColor;
+float CameraFarClip;
+//int ShadingMode;
+float SampleStepSize;
+
+#if CARVING_1 || CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepth0;
+#endif
+#if CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepth1;
+#endif
+#if CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepth2;
+#endif
+#if CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepth3;
+#endif
+#if CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepth4;
+#endif
+#if CARVING_6 || CARVING_7 || CARVING_8
+sampler2D CarvingDepth5;
+#endif
+#if CARVING_7 || CARVING_8
+sampler2D CarvingDepth6;
+#endif
+#if CARVING_8
+sampler2D CarvingDepth7;
+#endif
+
+
+int Xstart;
+int Ystart;
+
+float AmbientFactor;
+float DiffuseFactor;
+float SpecularFactor;
+float SpecularExponent;
+
+
+static float4 positionDepth;
+
+float calculateDepthFromNC(float3 positionNC);
+float3 calculateShading(float4 positionDepth, float4 colorOpacity);
+
+//RWStructuredBuffer<int> timeoutBuffer;
+
+float getIntensity(float3 position_nc)
+{
+    return tex3Dlod(Intensities, float4(position_nc, 0)).r;
+}
+
+#if PHONG || PHONG_LAO
+float3 getNormal(float3 position_nc)
+{
+    float3 normalSampled = tex3Dlod(Normals, float4(position_nc.x, position_nc.y, position_nc.z, 0.f)).xyz;
+    return (normalSampled * 2.f) - float3(1.f, 1.f, 1.f);
+}
+#endif
+
+float getLao(float3 position_nc)
+{
+    float lao = tex3Dlod(Lao, float4(position_nc, 0)).r;
+    float laoAdjusted = lao * 2.0;
+    return clamp(laoAdjusted, 0., 2.);
+}
+
+float4 getColorOpacityTF(float intensity)
+{
+    return tex2Dlod(ColorOpacityTF, float4(intensity, 0, 0, 0));
+}
+
+bool isClipped(float3 voxelPositionNc)
+{
+    bool clipped = false;
+    
+    float4 currentPosP;
+    float2 pixelCoordinateOfVoxel;
+    float4 carvingValues;
+    
+#if CARVING_1 || CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[0], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth0, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+#if CARVING_2 || CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[1], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth1, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+#if CARVING_3 || CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[2], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth2, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+#if CARVING_4 || CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[3], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth3, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+#if CARVING_5 || CARVING_6 || CARVING_7 || CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[4], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth4, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+#if CARVING_6 || CARVING_7 || CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[5], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth5, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+#if CARVING_7 || CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[6], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth6, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+#if CARVING_8
+    currentPosP = mul(CarvingMatrixMVP[7], float4(voxelPositionNc - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosP /= currentPosP.w;    
+    pixelCoordinateOfVoxel = (currentPosP.xy + float2(1, 1)) * 0.5;
+    pixelCoordinateOfVoxel.y = 1 - pixelCoordinateOfVoxel.y;    
+    carvingValues = tex2Dlod(CarvingDepth7, float4(pixelCoordinateOfVoxel.xy, 0, 0));    
+    clipped = clipped || currentPosP.z < carvingValues.r && currentPosP.z > carvingValues.g;
+#endif
+    
+    return clipped;
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{    
+    int2 ida = id.xy + int2(Xstart, Ystart);
+
+    uint textureWidth;
+    uint textureHeight;
+    PositionDepth.GetDimensions(textureWidth, textureHeight);
+
+    if (ida.x >= (int)textureWidth || ida.y >= (int)textureHeight)
+    {
+        return;
+    }
+
+    // Read data obtained during VolumeRaycasting step
+    positionDepth = PositionDepth[ida];
+    float4 directionSteps = DirectionSteps[ida];
+    
+    float3 direction = directionSteps.xyz;
+    int steps = directionSteps.w;
+	
+	// Early termination, no color
+    if (steps <= 0)
+    {
+        return;
+    }
+    
+    // // Carving
+    //carvingNormal = (float3(1, 1, 1) * 2.) - float3(1, 1, 1);
+    //carvingIsUsed = false;
+    
+    // Classification and compositing
+    float4 finalColor = float4(0, 0, 0, 0);
+    float3 currentPosition = positionDepth.xyz;
+    int i = 0;
+    
+    while (finalColor.a <= 0.99 && i < steps)
+    {
+        if (!isClipped(currentPosition))
+        {
+            // Transforming intensity to opacity
+            float intensity = getIntensity(currentPosition);
+        
+            if (intensity >= IntensityThreshold)
+            {
+                float4 colorOpacity = getColorOpacityTF(intensity);
+        
+                float depth = calculateDepthFromNC(currentPosition);
+            
+                float4 color;
+                color.rgb = calculateShading(float4(currentPosition, depth), colorOpacity);
+                color.a = colorOpacity.a;    
+            
+                // Adjust opacity for smaller or larger step sizes
+                color.a = 1.0 - pow(abs(1.0 - color.a), SampleStepSize);
+		
+                float oneMinusDstAlpha = 1.0 - finalColor.a;
+                finalColor.rgb += oneMinusDstAlpha * color.a * color.rgb;
+                finalColor.a += oneMinusDstAlpha * color.a;
+            }
+        }
+        
+        i++;
+        currentPosition += direction;
+    }
+
+    VolumeImage[ida] = finalColor;
+    //timeoutBuffer[0] = 12;
+}
+
+float calculateDepthFromNC(float3 positionNC)
+{
+    float4 currentPosV = mul(MatrixMV, float4(positionNC - float3(0.5, 0.5, 0.5), 1.f));
+    float z = currentPosV.z / currentPosV.w;
+    
+    return z;
+    
+    //float z2 = -z / CameraFarClip;	
+    //return z2;
+}
+
+#if PHONG || PHONG_LAO
+float3 calculatePhong(float4 currentPosition, float4 colorOpacity)
+{
+    // Normals
+    float3 normalSampled = getNormal(currentPosition.xyz);
+    float3 normalU = mul(MatrixM, float4(normalSampled.x, normalSampled.y, normalSampled.z, 0.f)).xyz;
+    float3 normalFromTexture = normalize(normalU);
+    
+    float3 normal = normalFromTexture; //lerp(normalFrom[[Texture, normalize(carvingNormal), carvingNormalFactor);
+    //normal = normalize(normal);
+
+    // Position of sample in World coordinates
+    float4 currentPosW = mul(MatrixM, float4(currentPosition.xyz - float3(0.5, 0.5, 0.5), 1.f));
+    currentPosW /= currentPosW.w;
+    
+    // Blinn-Phong variables
+    float3 blinnN = normal;
+    float3 blinnV = normalize((LightPositionW - currentPosW).xyz);
+    float3 blinnL = normalize((ViewerPositionW - currentPosW).xyz);
+
+    // Blinn-Phong calculations
+    float blinnLVnorm = length(blinnL + blinnV);
+    float3 blinnH = blinnLVnorm > 0.f ? (blinnL + blinnV) / blinnLVnorm : float3(0, 0, 0);
+    float blinnLN = dot(blinnL, blinnN);
+    float blinnNH = dot(blinnN, blinnH);
+
+	// Phong factors
+    float diffuse = max(blinnLN, 0.f);
+    float specular = pow(max(blinnNH, 0), SpecularExponent);
+
+    // LAO
+    float ambientOcclusionFactor = 1;
+#if PHONG_LAO
+    ambientOcclusionFactor = getLao(currentPosition.xyz);
+#endif
+    
+    float3 phong = float3(0, 0, 0);
+    phong += AmbientFactor * colorOpacity.rgb * ambientOcclusionFactor;
+    phong += DiffuseFactor * diffuse * colorOpacity.rgb;
+    phong += SpecularFactor * specular;
+    
+    return phong;
+
+}
+#endif
+
+float3 calculateLao(float4 currentPosition, float4 colorOpacity)
+{
+    float lao = getLao(currentPosition.xyz);
+    float3 finalColor = colorOpacity.rgb * lao;
+    return finalColor;
+    //return float3(laoAdjusted, laoAdjusted, laoAdjusted);
+}
+
+float3 calculateShading(float4 currentPosition, float4 colorOpacity)
+{
+#if SOLID_COLOR
+    return colorOpacity.rgb;
+#elif LAO
+    // Calculate LAO
+    return calculateLao(currentPosition, colorOpacity);
+#elif PHONG || PHONG_LAO
+    // Calculate Phong
+    return calculatePhong(currentPosition, colorOpacity);
+#else
+    return colorOpacity.rgb;
+#endif
+}

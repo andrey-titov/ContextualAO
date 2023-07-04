@@ -1,0 +1,32 @@
+{
+  "name": "ca.andreytitov.contextual-ao",
+  "version": "1.0.0",
+  "displayName": "ContextualAO",
+  "description": "This package includes a volume renderer with the Contextual Ambient Occlusion (CAO) algorithm that supports ambient occlusion with real-time clipping.",
+  "unity": "2022.3",
+  "documentationUrl": "https://example.com/",
+  "changelogUrl": "https://example.com/changelog.html",
+  "licensesUrl": "https://example.com/licensing.html",
+  "dependencies": {
+
+ },
+ "keywords": [
+    "Volume Rendering",
+    "Ambient Occlusion",
+    "Clipping",
+    "Carving"
+ ],
+  "author": {
+    "name": "Andrey Titov",
+    "email": "andrey.titov.1@ens.etsmtl.ca",
+    "url": "https://www.linkedin.com/in/andrey-a-titov/"
+  },
+  "samples": [
+        {
+            "displayName": "Full Setup",
+            "description": "Contains prefabs necessary for volume rendering with CAO",
+            "path": "Samples~/SamplesFullSetup"
+        }
+
+    ]
+}

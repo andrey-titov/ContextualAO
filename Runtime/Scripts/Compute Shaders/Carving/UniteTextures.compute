@@ -1,0 +1,29 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+Texture2D<float> DepthFront;
+Texture2D<float> DepthBack;
+Texture2D<float> DilationFront;
+Texture2D<float> DilationBack;
+
+RWTexture2D<float2> ResultDepth;
+RWTexture2D<float4> ResultDepthDilation;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float r = DepthFront[id.xy];
+    float g = DepthBack[id.xy];
+    float b = DilationFront[id.xy];
+    float a = DilationBack[id.xy];
+    
+    if (g == 0.0)
+    {
+        g = 1.0;
+    }
+
+    ResultDepth[id.xy] = float2(r, g);
+    ResultDepthDilation[id.xy] = float4(r, g, b, a);
+}
