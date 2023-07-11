@@ -744,20 +744,20 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     }
  #endif
 
-    // Optimization consisting of not calculating LAO for transparent voxels
-    if (Opacities[ida + int3(1, 1, 1)] == 0
-        && Opacities[ida] == 0
-        && Opacities[ida + int3(2, 2, 2)] == 0
-        && Opacities[ida + int3(0, 2, 2)] == 0
-        && Opacities[ida + int3(2, 0, 2)] == 0
-        && Opacities[ida + int3(0, 0, 2)] == 0
-        && Opacities[ida + int3(2, 2, 0)] == 0
-        && Opacities[ida + int3(0, 2, 0)] == 0
-        && Opacities[ida + int3(2, 0, 0)] == 0)
-    {
-        setResult(1);
-        return;
-    }
+    //// Optimization consisting of not calculating LAO for transparent voxels
+    //if (Opacities[ida + int3(1, 1, 1)] == 0
+    //    && Opacities[ida] == 0
+    //    && Opacities[ida + int3(2, 2, 2)] == 0
+    //    && Opacities[ida + int3(0, 2, 2)] == 0
+    //    && Opacities[ida + int3(2, 0, 2)] == 0
+    //    && Opacities[ida + int3(0, 0, 2)] == 0
+    //    && Opacities[ida + int3(2, 2, 0)] == 0
+    //    && Opacities[ida + int3(0, 2, 0)] == 0
+    //    && Opacities[ida + int3(2, 0, 0)] == 0)
+    //{
+    //    setResult(1);
+    //    return;
+    //}
     
     //boundaryMin = float3(0.5, 0.5, 0.5) / float3(dimensions);
     //boundaryMax = float3(1, 1, 1) - boundaryMin;

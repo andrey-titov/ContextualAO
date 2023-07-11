@@ -19,8 +19,9 @@ namespace ContextualAmbientOcclusion.Runtime
 
         new public Camera camera { get; private set; }
 
-        RenderTexture depthFront; //{ get; private set; }
-        RenderTexture depthBack; //{ get; private set; }
+        public RenderTexture depthFront { get; private set; }
+        public RenderTexture depthBack { get; private set; }
+        //public RenderTexture depthFrontSAMPLE;
 
         public CarvingDilation carvingDilation { get; private set; }
 
@@ -28,14 +29,14 @@ namespace ContextualAmbientOcclusion.Runtime
 
         private readonly Vector3 RENDERING_OFFSET = new Vector3(100, 100, 100);
 
-        //private MeshRenderer[] meshes;
         public List<Volume> volumes { get; set; } = new List<Volume>();
-        public Dictionary<Dilation, CarvingConfiguration> carvingConfigurations = new();
+        public Dictionary<Dilation, CarvingConfiguration> carvingConfigurations { get; set; } = new();
 
         public delegate void CarvingDestroyedAction(CarvingCamera carvingCamera);
         public static event CarvingDestroyedAction OnCarvingDestroyed;
 
-        //public GameObject meshObject { get; private set; }
+        //public RenderTexture carvingDepthSAMPLE; //{ get; private set; }
+        //public RenderTexture carvingDepthDilationSAMPLE; //{ get; private set; }
 
         private void Awake()
         {
@@ -44,6 +45,7 @@ namespace ContextualAmbientOcclusion.Runtime
             // Depth Render Textures
             depthFront = new RenderTexture(FBO_RESOLUTION, FBO_RESOLUTION, 16, RenderTextureFormat.Depth, RenderTextureReadWrite.Linear);
             depthBack = new RenderTexture(FBO_RESOLUTION, FBO_RESOLUTION, 16, RenderTextureFormat.Depth, RenderTextureReadWrite.Linear);
+            //depthFrontSAMPLE = new RenderTexture(FBO_RESOLUTION, FBO_RESOLUTION, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
 
             depthFront.filterMode = FilterMode.Bilinear;
             depthBack.filterMode = FilterMode.Bilinear;
@@ -82,10 +84,11 @@ namespace ContextualAmbientOcclusion.Runtime
         {
             RenderToDepthBuffers();
 
-            //if (volume != null)
-            //{
-            //    carvingDilation.DilateAndUnite(volume, depthFront, depthBack);
-            //}        
+            foreach (var kv in carvingConfigurations)
+            {
+                Dilation dilationKey = new Dilation(kv.Key.rayStepCountLAO, kv.Key.spacingMagnitude);
+                carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack, kv.Value);                
+            }
         }
 
         private void OnVolumeLoaded(Volume volume)
@@ -102,6 +105,8 @@ namespace ContextualAmbientOcclusion.Runtime
                 if (!carvingConfigurations.ContainsKey(dilationKey))
                 {
                     carvingConfigurations[dilationKey] = carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack);
+                    //carvingDepthSAMPLE = carvingConfigurations[dilationKey].carvingDepth;
+                    //carvingDepthDilationSAMPLE = carvingConfigurations[dilationKey].carvingDepthDilation;
                 }
             }
         }
@@ -109,7 +114,7 @@ namespace ContextualAmbientOcclusion.Runtime
 
         private void RenderToDepthBuffers()
         {
-            MeshRenderer[] subMeshes = GetComponentsInChildren<MeshRenderer>(false).Where(m => m.sortingLayerName == CARVING_MESH_LAYER).ToArray();
+            MeshRenderer[] subMeshes = GetComponentsInChildren<MeshRenderer>(false).Where(m => LayerMask.LayerToName(m.gameObject.layer) == CARVING_MESH_LAYER).ToArray();
 
             transform.position += RENDERING_OFFSET;
             foreach (MeshRenderer mesh in subMeshes)
@@ -134,6 +139,8 @@ namespace ContextualAmbientOcclusion.Runtime
                 mesh.material = frontMaterial;
             }
             camera.targetTexture = depthFront;
+
+            //Graphics.Blit(depthFront, depthFrontSAMPLE);
         }
 
         public Matrix4x4 GetProjectionMatrix()

@@ -44,6 +44,7 @@ namespace ContextualAmbientOcclusion.Runtime
             {
                 vc = volume.GetComponent<VolumeCao>();
 
+                Destroy(vc.normals);
                 Destroy(vc.opacityOutput);
                 Destroy(vc.laoMask);
                 Destroy(vc.laoOutput);
@@ -63,15 +64,15 @@ namespace ContextualAmbientOcclusion.Runtime
         //    shader.SetTexture(kernel, "OpacityTF", volume.opacityTexture);
         //}
 
-        public bool RequirePrecalculation(Volume volume)
-        {
-            VolumeCao vc = volume.GetComponent<VolumeCao>();
+        //public bool RequirePrecalculation(Volume volume)
+        //{
+        //    VolumeCao vc = volume.GetComponent<VolumeCao>();
 
-            return !vc.precalculatedRayPattern.HasValue
-                || vc.precalculatedRayPattern != volume.rayPatternLAO
-                || !vc.precalculatedShadingMode.HasValue
-                || vc.precalculatedShadingMode != volume.shadingMode;
-        }
+        //    return !vc.precalculatedRayPattern.HasValue
+        //        || vc.precalculatedRayPattern != volume.rayPatternLAO
+        //        || !vc.precalculatedShadingMode.HasValue
+        //        || vc.precalculatedShadingMode != volume.shadingMode;
+        //}
 
         public void PrecalculateOpacity(Volume volume)
         {
@@ -92,8 +93,7 @@ namespace ContextualAmbientOcclusion.Runtime
             ExecuteShader(volume.info.dimensions);
             shader.DisableKeyword("PRECALCULATION_PASS");
 
-            vc.precalculatedRayPattern = volume.rayPatternLAO;
-            vc.precalculatedShadingMode = volume.shadingMode;
+            
         }
 
         public void Perform(Volume volume)

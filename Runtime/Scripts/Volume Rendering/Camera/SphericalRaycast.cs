@@ -46,7 +46,11 @@ namespace ContextualAmbientOcclusion.Runtime
         public bool RequirePrecalculation(Volume volume)
         {
             VolumeCao vc = volume.GetComponent<VolumeCao>();
-            return !vc.rayCastLaoPrecalculated;
+            return !vc.rayCastLaoPrecalculated
+                || !vc.precalculatedRayPattern.HasValue
+                || vc.precalculatedRayPattern != volume.rayPatternLAO
+                || !vc.precalculatedShadingMode.HasValue
+                || vc.precalculatedShadingMode != volume.shadingMode;
         }
 
         public void OnVolumeLoaded(Volume volume)
@@ -97,8 +101,9 @@ namespace ContextualAmbientOcclusion.Runtime
                 ExecuteShaderInParts(volume.info.dimensions, computeShaderParts);
             }
 
-            vc.rayCastLaoPrecalculated = true;
+            vc.precalculatedRayPattern = volume.rayPatternLAO;
             vc.precalculatedShadingMode = volume.shadingMode;
+            vc.rayCastLaoPrecalculated = true;
         }
 
         public void Perform(Volume volume)
