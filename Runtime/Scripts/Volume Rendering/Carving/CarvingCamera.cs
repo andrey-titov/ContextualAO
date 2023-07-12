@@ -88,6 +88,17 @@ namespace ContextualAmbientOcclusion.Runtime
             //}        
         }
 
+        public void LoadNewMeshes()
+        {
+            RenderToDepthBuffers();
+
+            foreach (Volume volume in volumes)
+            {
+                Dilation dilationKey = new Dilation(volume.rayStepCountLAO, volume.info.spacing.magnitude);
+                carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack);
+            }
+        }
+
         private void OnVolumeLoaded(Volume volume)
         {
             if (!volumes.Contains(volume))
