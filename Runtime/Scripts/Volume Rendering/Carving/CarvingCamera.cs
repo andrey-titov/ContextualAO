@@ -82,16 +82,6 @@ namespace ContextualAmbientOcclusion.Runtime
         {
             RenderToDepthBuffers();
 
-            //if (volume != null)
-            //{
-            //    carvingDilation.DilateAndUnite(volume, depthFront, depthBack);
-            //}        
-        }
-
-        public void LoadNewMeshes()
-        {
-            RenderToDepthBuffers();
-
             foreach (Volume volume in volumes)
             {
                 Dilation dilationKey = new Dilation(volume.rayStepCountLAO, volume.info.spacing.magnitude);
@@ -120,7 +110,7 @@ namespace ContextualAmbientOcclusion.Runtime
 
         private void RenderToDepthBuffers()
         {
-            MeshRenderer[] subMeshes = GetComponentsInChildren<MeshRenderer>(false).Where(m => m.sortingLayerName == CARVING_MESH_LAYER).ToArray();
+            MeshRenderer[] subMeshes = GetComponentsInChildren<MeshRenderer>(false).Where(m => LayerMask.LayerToName(m.gameObject.layer) == CARVING_MESH_LAYER).ToArray();
 
             transform.position += RENDERING_OFFSET;
             foreach (MeshRenderer mesh in subMeshes)
