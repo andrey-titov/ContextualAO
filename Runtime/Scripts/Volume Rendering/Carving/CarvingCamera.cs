@@ -86,19 +86,10 @@ namespace ContextualAmbientOcclusion.Runtime
         {
             RenderToDepthBuffers();
 
-            foreach (Volume volume in volumes)
+            foreach (var kv in carvingConfigurations)
             {
-                Dilation dilationKey = new Dilation(volume.rayStepCountLAO, volume.info.spacing.magnitude);
-
-                if (carvingConfigurations.ContainsKey(dilationKey))
-                {
-                    carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack, carvingConfigurations[dilationKey]);
-                }
-                else
-                {
-                    carvingConfigurations[dilationKey] = carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack);
-                }
-                
+                Dilation dilationKey = new Dilation(kv.Key.rayStepCountLAO, kv.Key.spacingMagnitude);
+                carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack, kv.Value);                
             }
         }
 
