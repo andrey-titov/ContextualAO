@@ -59,9 +59,12 @@ namespace ContextualAmbientOcclusion.Runtime
             return carvingConfiguration;
         }
 
-        public CarvingConfiguration DilateAndUnite(Dilation dilationKey, RenderTexture depthFront, RenderTexture depthBack)
+        public CarvingConfiguration DilateAndUnite(Dilation dilationKey, RenderTexture depthFront, RenderTexture depthBack, CarvingConfiguration carvingConfiguration = null)
         {
-            CarvingConfiguration carvingConfiguration = CreateCarvingConfiguration();
+            if (carvingConfiguration == null)
+            {
+                carvingConfiguration = CreateCarvingConfiguration();
+            }            
 
             UpdateDilationParameters(dilationKey);
 

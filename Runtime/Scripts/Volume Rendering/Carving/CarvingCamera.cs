@@ -89,7 +89,16 @@ namespace ContextualAmbientOcclusion.Runtime
             foreach (Volume volume in volumes)
             {
                 Dilation dilationKey = new Dilation(volume.rayStepCountLAO, volume.info.spacing.magnitude);
-                carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack);
+
+                if (carvingConfigurations.ContainsKey(dilationKey))
+                {
+                    carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack, carvingConfigurations[dilationKey]);
+                }
+                else
+                {
+                    carvingConfigurations[dilationKey] = carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack);
+                }
+                
             }
         }
 
