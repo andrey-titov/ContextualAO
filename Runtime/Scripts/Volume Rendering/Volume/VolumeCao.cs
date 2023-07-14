@@ -20,6 +20,22 @@ namespace ContextualAmbientOcclusion.Runtime
         public VolumeShadingMode? precalculatedShadingMode { get; set; }
         public bool rayCastLaoPrecalculated { get; set; }
 
+        public void Clear()
+        {
+            lastFrameVoxelClipping = -1;
+            lastFrameRayCastLAO = -1;
+            lastFrameNormals = -1;
+            precalculatedRayPattern = null;
+            precalculatedShadingMode = null;
+            rayCastLaoPrecalculated = false;
+
+            //Destroy(normals);
+            //Destroy(opacityOutput);
+            //Destroy(laoMask);
+            //Destroy(laoOutput);
+            //Destroy(laoPrecalculated);
+        }
+
         //private void OnDestroy()
         //{
         //    Destroy(normals);

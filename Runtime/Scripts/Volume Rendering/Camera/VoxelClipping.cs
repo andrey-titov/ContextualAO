@@ -44,6 +44,7 @@ namespace ContextualAmbientOcclusion.Runtime
             {
                 vc = volume.GetComponent<VolumeCao>();
 
+                Destroy(vc.normals);
                 Destroy(vc.opacityOutput);
                 Destroy(vc.laoMask);
                 Destroy(vc.laoOutput);

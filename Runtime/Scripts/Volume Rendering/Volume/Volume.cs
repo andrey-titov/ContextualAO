@@ -107,6 +107,12 @@ namespace ContextualAmbientOcclusion.Runtime
             UpdateStepInfo();
             UpdatePhysicalSizeInfo();
 
+            VolumeCao cao = GetComponent<VolumeCao>();
+            if (cao != null) 
+            {
+                cao.Clear();
+            }
+
             if (OnVolumeLoaded != null)
             {
                 OnVolumeLoaded.Invoke(this);
