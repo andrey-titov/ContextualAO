@@ -270,39 +270,31 @@ namespace ContextualAmbientOcclusion.Runtime
                 if (volume.enabled && volume.gameObject.activeSelf)
                 {
                     volume.colorBoundaries.gameObject.layer = boundaryLayer;
-
+                                        
                     if (volume.shadingMode == VolumeShadingMode.CAO
                         || volume.shadingMode == VolumeShadingMode.PhongAndCAO
                         || volume.shadingMode == VolumeShadingMode.LAO)
                     {
-                        //Carving - LAO Pipeline
-                        if (voxelClipping.RequirePrecalculation(volume))
-                        {
-                            voxelClipping.PrecalculateOpacity(volume);
-                        }
+                        // Both clipping and ray cast needed
                         if (rayCastLAO.RequirePrecalculation(volume))
                         {
+                            voxelClipping.PrecalculateOpacity(volume);
                             rayCastLAO.PrecalculateLAO(volume);
                         }
 
                         voxelClipping.Perform(volume);
                         rayCastLAO.Perform(volume);
                     }
+                    else if (volume.shadingMode == VolumeShadingMode.Phong)
+                    {
+                        // Only voxel clipping needed
+                        voxelClipping.Perform(volume);
+                    }
 
                     if (volume.shadingMode == VolumeShadingMode.Phong
                         || volume.shadingMode == VolumeShadingMode.PhongAndCAO)
                     {
-                        // Phong
-                        if (voxelClipping.RequirePrecalculation(volume))
-                        {
-                            voxelClipping.PrecalculateOpacity(volume);
-                        }
-                        //if (sobelNormals.RequirePrecalculation(volume))
-                        //{
-                        //    sobelNormals.PrecalculateNormals(volume);
-                        //}
-
-                        voxelClipping.Perform(volume);
+                        // Normals calculation needed
                         sobelNormals.Perform(volume);
                     }
 
