@@ -168,6 +168,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 		i++;
 	}
 
-    PositionDepth[ida] = float4(0,0,0, 1);
+    PositionDepth[ida] = float4(0, 0, 0, 1);
     DirectionSteps[ida] = float4(0, 0, 0, 0);
 }
