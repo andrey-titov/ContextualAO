@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 
 public enum VolumeShadingMode
 {
-    SolidColor = 0,
-    Phong = 1,
-    CAO = 2,
-    PhongAndCAO = 3,
-    LAO = 4, // Only for benchmarking
-    //LAOFull1pass = 5, // Only for benchmarking
+    SolidColor = 0, // Transfer Function values used directly
+    Phong = 1, // Blinn_phong shading
+    CAO = 2, // Contextual Ambient Occlusion
+    PhongAndCAO = 3, // Contextual Ambient Occlusion combined with Phong (Experimental)
+    LAO = 4, // Local Ambient Occlusion
 }
 
 public enum RayPatternLAO
@@ -20,5 +19,5 @@ public enum RayPatternLAO
     Neighborhood14 = 14,
     Neighborhood26 = 26,
     Rubiks54 = 54,
-    Sphere512 = 512,
+    Sphere512 = 512, // Only for benchmarking, should not be used
 }
