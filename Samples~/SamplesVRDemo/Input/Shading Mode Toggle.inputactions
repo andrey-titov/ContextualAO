@@ -1,5 +1,5 @@
 {
-    "name": "Toggle",
+    "name": "Shading Mode Toggle",
     "maps": [
         {
             "name": "Main",
@@ -49,6 +49,17 @@
                 },
                 {
                     "name": "",
+                    "id": "e2434614-c22b-401e-b97e-ccd8d5476a8a",
+                    "path": "<XRController>{LeftHand}/primaryButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Solid Color",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "ab7444ee-5ce0-4d61-81bf-33a702884cef",
                     "path": "<Keyboard>/#(2)",
                     "interactions": "",
@@ -62,6 +73,17 @@
                     "name": "",
                     "id": "8deee2b3-3b82-4c64-a46e-9687213479ed",
                     "path": "<XRController>{RightHand}/secondaryButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Phong",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "85fae7e7-5279-4a48-9337-9b94c5bec5f0",
+                    "path": "<XRController>{LeftHand}/secondaryButton",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
