@@ -1,0 +1,76 @@
+{
+    "name": "Toggle",
+    "maps": [
+        {
+            "name": "Main",
+            "id": "6a191b48-1dd6-4219-85f1-4cf7ec3958c1",
+            "actions": [
+                {
+                    "name": "Solid Color",
+                    "type": "Button",
+                    "id": "b6e4ee56-a10f-4633-9531-19c20fcf1340",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Phong",
+                    "type": "Button",
+                    "id": "66f09d11-290d-405a-b5c4-36567f1ed161",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "21aa36c6-c58b-4adf-a7de-6e9c9aefc8ac",
+                    "path": "<Keyboard>/#(1)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Solid Color",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2aea29e4-b58e-42b7-ae4c-1110709e7581",
+                    "path": "<XRController>{RightHand}/primaryButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Solid Color",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ab7444ee-5ce0-4d61-81bf-33a702884cef",
+                    "path": "<Keyboard>/#(2)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Phong",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8deee2b3-3b82-4c64-a46e-9687213479ed",
+                    "path": "<XRController>{RightHand}/secondaryButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Phong",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

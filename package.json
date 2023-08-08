@@ -24,12 +24,12 @@
   "samples": [
         {
             "displayName": "Full Setup",
-            "description": "Contains prefabs necessary for volume rendering with CAO",
+            "description": "Contains prefabs necessary for volume rendering with CAO.",
             "path": "Samples~/SamplesFullSetup"
         },
 		{
             "displayName": "VR Demo",
-            "description": "Contains sample VR scene that supports interactive clipping of of volumes visualized with the CAO algorithm. Requires XR Interaction Toolkit 2.3.2. Future version of the XR Interaction Toolkit might be supported too, but require manual replacment of the \"Complete XR Origin Set Up\" object in the scene by the updated one in the new version.",
+            "description": "Contains a sample VR scene which demonstrates interactive clipping of volumes with the CAO algorithm. Requires the XR Interaction Toolkit package.",
             "path": "Samples~/SamplesVRDemo"
         }
 
