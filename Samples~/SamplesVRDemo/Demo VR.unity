@@ -133,11 +133,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: volumeFile
-      value: MRBrainTumor2.nrrd
+      value: Assets/Samples/ContextualAO/1.0.0/Full Setup/Volumes/MRBrainTumor2.nrrd
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: fileLocation
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: volumePropertyFile
@@ -145,7 +145,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: transferFunctionFile
-      value: MR-Default3.vp
+      value: Assets/Samples/ContextualAO/1.0.0/Full Setup/Transfer Functions/MR-Default3.vp
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215268, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: m_Name
@@ -1008,11 +1008,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: volumeFile
-      value: MRHead.mnc
+      value: Assets/Samples/ContextualAO/1.0.0/Full Setup/Volumes/MRHead.mnc
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: fileLocation
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: volumePropertyFile
@@ -1020,7 +1020,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215266, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: transferFunctionFile
-      value: MR-Default.vp
+      value: Assets/Samples/ContextualAO/1.0.0/Full Setup/Transfer Functions/MR-Default.vp
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215268, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: m_Name
