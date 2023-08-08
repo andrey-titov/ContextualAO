@@ -890,7 +890,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215268, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: m_Name
-      value: Volume MRIHead
+      value: Volume MRHead
       objectReference: {fileID: 0}
     - target: {fileID: 6500538415134215268, guid: 69fe105877124554ba12671fc21c83cc, type: 3}
       propertyPath: m_IsActive
