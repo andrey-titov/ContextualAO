@@ -1,6 +1,8 @@
 # ContextualAO
 ContextualAO is a Unity package that includes a volume renderer with the Contextual Ambient Occlusion (CAO) algorithm that supports ambient occlusion with real-time clipping.
 
+[![Watch the video](https://img.youtube.com/vi/I1nA5n5v1-E/maxresdefault.jpg)](https://www.youtube.com/watch?v=I1nA5n5v1-E)
+
 ## Installation
 1) Create or open a project in Unity 2022.3 or later.
 2) Navigate to *Window => Package Manager*. The *Package Manager* window should open.
@@ -24,11 +26,13 @@ ContextualAO is a Unity package that includes a volume renderer with the Context
 ## Demo Scenes
 
 ### Demo
-The Demo scene features two volumes whose properties and types of rendering can be changed in real time.
 
 ![2023-08-10 6=18=18 PM](https://github.com/andrey-titov/ContextualAO/assets/22062174/64866f37-7955-4bd1-ad30-eb21ab00d846)
 
+The Demo scene features two volumes whose properties and types of rendering can be changed in real time. The right volume will slowly rotate in real time.
+
 ### Demo VR
-The Demo VR scene features two volumes that can be interactively clipped with a cubic clipping mesh in the left hand, and a spherical clipping mesh in the right hand.
 
 ![2023-08-10 6=27=10 PM](https://github.com/andrey-titov/ContextualAO/assets/22062174/632d07e8-ff10-482e-ae9c-ce83f3820e6f)
+
+The Demo VR scene features the same two volumes that can be interactively clipped with a cubic clipping mesh in the left hand, and a spherical clipping mesh in the right hand. The visualization can be toggled between CAO and solid color rendering using the primary button on either of the controllers (buttons *A* and *X* on the Oculus Touch controllers). Additionally, it can be toggled between CAO and Blinn-Phong shading using the primary button on either of the controllers (buttons *B* and *Y* on the Oculus Touch controllers)
