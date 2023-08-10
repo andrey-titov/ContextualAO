@@ -35,6 +35,8 @@ namespace ContextualAmbientOcclusion.Runtime
         public delegate void CarvingDestroyedAction(CarvingCamera carvingCamera);
         public static event CarvingDestroyedAction OnCarvingDestroyed;
 
+        private VolumeRendering volumeRendering;
+
         //public RenderTexture carvingDepthSAMPLE; //{ get; private set; }
         //public RenderTexture carvingDepthDilationSAMPLE; //{ get; private set; }
 
@@ -69,6 +71,16 @@ namespace ContextualAmbientOcclusion.Runtime
             Volume.OnVolumeLoaded += OnVolumeLoaded;
         }
 
+        private void Start()
+        {
+            volumeRendering = FindObjectOfType<VolumeRendering>();
+
+            foreach (Volume volume in volumeRendering.volumes)
+            {
+                GenerateDilationForVolume(volume);
+            }
+        }
+
         private void OnDestroy()
         {
             if (OnCarvingDestroyed != null)
@@ -98,16 +110,17 @@ namespace ContextualAmbientOcclusion.Runtime
                 volumes.Add(volume);
             }
 
-            // Configuration for current LAO step count
-            {
-                Dilation dilationKey = new Dilation(volume.rayStepCountLAO, volume.info.spacing.magnitude);
+            GenerateDilationForVolume(volume);
+        }
 
-                if (!carvingConfigurations.ContainsKey(dilationKey))
-                {
-                    carvingConfigurations[dilationKey] = carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack);
-                    //carvingDepthSAMPLE = carvingConfigurations[dilationKey].carvingDepth;
-                    //carvingDepthDilationSAMPLE = carvingConfigurations[dilationKey].carvingDepthDilation;
-                }
+        private void GenerateDilationForVolume(Volume volume)
+        {
+            // Configuration for current LAO step count
+            Dilation dilationKey = new Dilation(volume.rayStepCountLAO, volume.info.spacing.magnitude);
+
+            if (!carvingConfigurations.ContainsKey(dilationKey))
+            {
+                carvingConfigurations[dilationKey] = carvingDilation.DilateAndUnite(dilationKey, depthFront, depthBack);
             }
         }
 
