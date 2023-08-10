@@ -69,6 +69,7 @@ namespace ContextualAmbientOcclusion.Runtime
             LoadMeshes();
 
             Volume.OnVolumeLoaded += OnVolumeLoaded;
+            Volume.OnVolumeDestroyed += OnVolumeDestroyed;
         }
 
         private void Start()
@@ -111,6 +112,25 @@ namespace ContextualAmbientOcclusion.Runtime
             }
 
             GenerateDilationForVolume(volume);
+        }
+
+        private void OnVolumeDestroyed(Volume volume)
+        {
+            Dilation dilationKey = new Dilation(volume.rayStepCountLAO, volume.info.spacing.magnitude);
+
+            int volumesSameKey = volumeRendering.volumes
+                .Where(v => v != volume)
+                .Where(v => v.rayStepCountLAO == dilationKey.rayStepCountLAO && v.info.spacing.magnitude == dilationKey.spacingMagnitude)
+                .Count();
+
+            // Destroy configuration if no other volume uses it
+            if (volumesSameKey == 0)
+            {
+                CarvingConfiguration config = carvingConfigurations[dilationKey];
+                Destroy(config.carvingDepth);
+                Destroy(config.carvingDepthDilation);
+                carvingConfigurations.Remove(dilationKey);
+            }
         }
 
         private void GenerateDilationForVolume(Volume volume)
