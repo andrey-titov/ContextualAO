@@ -37,14 +37,18 @@ namespace ContextualAmbientOcclusion.Runtime
 
         private void Awake()
         {
+            // Adjust culling mask of main camera
+            int cullingMaskAdj = LayerMask.GetMask(VolumeRendering.LAYER_VOLUME_BOUNDARIES, VolumeRendering.LAYER_VOLUME_CARVING);
+            Camera.main.cullingMask &= ~cullingMaskAdj;
+
             List<GameObject> cameraObjects = new List<GameObject>
-        {
-            new GameObject("Boundaries Front Camera"),
-            new GameObject("Boundaries Back Camera"),
-            new GameObject("Occluders Camera"),
-            //cameraObjects.Add(new GameObject("Carving Camera"));
-            //new GameObject("Dilation Camera")
-        };
+            {
+                new GameObject("Boundaries Front Camera"),
+                new GameObject("Boundaries Back Camera"),
+                new GameObject("Occluders Camera"),
+                //cameraObjects.Add(new GameObject("Carving Camera"));
+                //new GameObject("Dilation Camera")
+            };
 
             foreach (GameObject cam in cameraObjects)
             {
@@ -70,11 +74,9 @@ namespace ContextualAmbientOcclusion.Runtime
             //dilationCamera = cameras[3];
 
 
-            boundariesFrontCamera.cullingMask = LayerMask.GetMask("Volume Boundaries");
-            boundariesBackCamera.cullingMask = LayerMask.GetMask("Volume Boundaries");
+            boundariesFrontCamera.cullingMask = LayerMask.GetMask(VolumeRendering.LAYER_VOLUME_BOUNDARIES);
+            boundariesBackCamera.cullingMask = LayerMask.GetMask(VolumeRendering.LAYER_VOLUME_BOUNDARIES);
             occludersCamera.cullingMask = Camera.main.cullingMask;
-            //carvingCamera.cullingMask = LayerMask.GetMask("Volume Carving");
-            //dilationCamera.cullingMask = LayerMask.GetMask("Volume Dilation");
 
             ResolutionObservable.OnResolutionChanged += OnResolutionChanged;
             VolumeRendering.OnVolumeRenderingReady += OnVolumeRenderingReady;
@@ -160,7 +162,8 @@ namespace ContextualAmbientOcclusion.Runtime
                     Destroy(cam.targetTexture);
                 }
 
-                if (cam.cullingMask == LayerMask.GetMask("Volume Boundaries") || cam.cullingMask == LayerMask.GetMask("Volume Carving"))
+                if (cam.cullingMask == LayerMask.GetMask(VolumeRendering.LAYER_VOLUME_BOUNDARIES) 
+                    || cam.cullingMask == LayerMask.GetMask(VolumeRendering.LAYER_VOLUME_CARVING))
                 {
                     cam.targetTexture = new RenderTexture(newRes.x, newRes.y, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
                 }

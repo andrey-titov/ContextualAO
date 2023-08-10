@@ -15,8 +15,6 @@ namespace ContextualAmbientOcclusion.Runtime
         public Material backMaterial;
         //public MeshRenderer mesh;
 
-        public const string CARVING_MESH_LAYER = "Volume Carving";
-
         new public Camera camera { get; private set; }
 
         public RenderTexture depthFront { get; private set; }
@@ -147,7 +145,7 @@ namespace ContextualAmbientOcclusion.Runtime
 
         private void RenderToDepthBuffers()
         {
-            MeshRenderer[] subMeshes = GetComponentsInChildren<MeshRenderer>(false).Where(m => LayerMask.LayerToName(m.gameObject.layer) == CARVING_MESH_LAYER).ToArray();
+            MeshRenderer[] subMeshes = GetComponentsInChildren<MeshRenderer>(false).Where(m => LayerMask.LayerToName(m.gameObject.layer) == VolumeRendering.LAYER_VOLUME_CARVING).ToArray();
 
             transform.position += RENDERING_OFFSET;
             foreach (MeshRenderer mesh in subMeshes)

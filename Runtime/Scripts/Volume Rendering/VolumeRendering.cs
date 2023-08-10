@@ -19,6 +19,9 @@ namespace ContextualAmbientOcclusion.Runtime
 
         private VolumeCamera volumeCamera;
 
+        public const string LAYER_VOLUME_BOUNDARIES = "Volume Boundaries";
+        public const string LAYER_VOLUME_CARVING = "Volume Carving";
+
         public delegate void VolumeRenderingReadyAction(VolumeRendering volumeRendering);
         public static event VolumeRenderingReadyAction OnVolumeRenderingReady;
 
@@ -26,10 +29,6 @@ namespace ContextualAmbientOcclusion.Runtime
         {
             Volume.OnVolumeLoaded += OnVolumeLoaded;
             Volume.OnVolumeDestroyed += OnVolumeDestroyed;
-
-            Camera camera = Camera.main;
-
-            //camera.AddComponent<VolumeCamera>();
         }
 
         void Start()

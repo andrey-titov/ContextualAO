@@ -92,8 +92,6 @@ namespace ContextualAmbientOcclusion.Runtime
             shader.EnableKeyword("PRECALCULATION_PASS");
             ExecuteShader(volume.info.dimensions);
             shader.DisableKeyword("PRECALCULATION_PASS");
-
-            
         }
 
         public void Perform(Volume volume)

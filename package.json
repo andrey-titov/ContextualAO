@@ -29,7 +29,7 @@
         },
 		{
             "displayName": "VR Demo",
-            "description": "Contains a sample VR scene which demonstrates interactive clipping of volumes with the CAO algorithm. Requires the XR Interaction Toolkit 2.4.3 package.",
+            "description": "Contains a sample VR scene which demonstrates interactive clipping of volumes with the CAO algorithm. Requires the XR Interaction Toolkit and OpenXR Plugin packages.",
             "path": "Samples~/SamplesVRDemo"
         }
 
